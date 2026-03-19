@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevCodec — Encoder/Decoder Toolkit</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔣</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #6c63ff;
+      --accent-glow: #6c63ff44;
+      --success: #4ade80;
+      --error: #f87171;
+      --font-ui: 'Space Grotesk', sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.5rem 2rem 0;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    header p {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      padding: 1rem 2rem 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab:hover { color: var(--text); background: var(--surface); }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    main {
+      flex: 1;
+      padding: 0 2rem 2rem;
+    }
+
+    .panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 12px 12px 12px;
+      padding: 1.5rem;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .panel.active { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .codec-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .codec-col { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .codec-col label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--text);
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    .arrow-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding-top: 1.5rem;
+    }
+
+    .arrow-col svg {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    button:hover { border-color: var(--accent); color: var(--accent); }
+
+    button.copy {
+      background: transparent;
+      font-size: 0.72rem;
+      padding: 0.3rem 0.6rem;
+    }
+
+    button.copy.copied { border-color: var(--success); color: var(--success); }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 0.78rem;
+      font-family: var(--font-code);
+      min-height: 1.2em;
+      margin-top: 0.25rem;
+    }
+
+    /* JWT special layout */
+    .jwt-section {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .jwt-part {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+
+    .jwt-part h3 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .jwt-part pre {
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text);
+    }
+
+    .jwt-part .exp-warn {
+      margin-top: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: var(--font-code);
+    }
+
+    .jwt-part .exp-warn.expired { background: #f8717122; color: var(--error); }
+    .jwt-part .exp-warn.valid { background: #4ade8022; color: var(--success); }
+
+    /* Timestamp special */
+    .ts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .ts-grid .codec-col input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      color: var(--text);
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .ts-grid .codec-col input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    .ts-output {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: var(--font-code);
+      font-size: 0.82rem;
+      min-height: 2.5rem;
+      word-break: break-all;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 700px) {
+      .codec-row { grid-template-columns: 1fr; }
+      .arrow-col { flex-direction: row; padding-top: 0; }
+      .ts-grid { grid-template-columns: 1fr; }
+      header { padding: 1rem 1rem 0; }
+      .tabs { padding: 0.75rem 1rem 0; }
+      main { padding: 0 1rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1><span>&lt;/&gt;</span> DevCodec</h1>
+  <p>All-in-one encoder/decoder toolkit for developers</p>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-panel="base64">Base64</button>
+  <button class="tab" data-panel="url">URL</button>
+  <button class="tab" data-panel="jwt">JWT</button>
+  <button class="tab" data-panel="hex">Hex</button>
+  <button class="tab" data-panel="html">HTML Entities</button>
+  <button class="tab" data-panel="timestamp">Timestamp</button>
+</nav>
+
+<main>
+  <!-- Base64 -->
+  <section class="panel active" id="panel-base64">
+    <div class="codec-row">
+      <div class="codec-col">
+        <label>Plain Text</label>
+        <textarea id="b64-plain" placeholder="Hello, world!"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="b64-plain">Copy</button>
+        </div>
+        <div class="error-msg" id="b64-plain-err"></div>
+      </div>
+      <div class="arrow-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </div>
+      <div class="codec-col">
+        <label>Base64</label>
+        <textarea id="b64-encoded" placeholder="SGVsbG8sIHdvcmxkIQ=="></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="b64-encoded">Copy</button>
+        </div>
+        <div class="error-msg" id="b64-encoded-err"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- URL -->
+  <section class="panel" id="panel-url">
+    <div class="codec-row">
+      <div class="codec-col">
+        <label>Decoded</label>
+        <textarea id="url-plain" placeholder="hello world & foo=bar"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="url-plain">Copy</button>
+        </div>
+      </div>
+      <div class="arrow-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </div>
+      <div class="codec-col">
+        <label>URL Encoded</label>
+        <textarea id="url-encoded" placeholder="hello%20world%20%26%20foo%3Dbar"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="url-encoded">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JWT -->
+  <section class="panel" id="panel-jwt">
+    <div class="codec-col">
+      <label>JWT Token</label>
+      <textarea id="jwt-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"></textarea>
+      <div class="btn-row">
+        <button class="copy" data-target="jwt-input">Copy</button>
+      </div>
+      <div class="error-msg" id="jwt-err"></div>
+    </div>
+    <div class="jwt-section" id="jwt-output">
+      <div class="jwt-part">
+        <h3>Header</h3>
+        <pre id="jwt-header">—</pre>
+      </div>
+      <div class="jwt-part">
+        <h3>Payload</h3>
+        <pre id="jwt-payload">—</pre>
+        <div id="jwt-exp"></div>
+      </div>
+      <div class="jwt-part">
+        <h3>Signature</h3>
+        <pre id="jwt-signature">—</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hex -->
+  <section class="panel" id="panel-hex">
+    <div class="codec-row">
+      <div class="codec-col">
+        <label>String</label>
+        <textarea id="hex-plain" placeholder="Hello"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="hex-plain">Copy</button>
+        </div>
+        <div class="error-msg" id="hex-plain-err"></div>
+      </div>
+      <div class="arrow-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </div>
+      <div class="codec-col">
+        <label>Hex</label>
+        <textarea id="hex-encoded" placeholder="48 65 6c 6c 6f"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="hex-encoded">Copy</button>
+        </div>
+        <div class="error-msg" id="hex-encoded-err"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HTML Entities -->
+  <section class="panel" id="panel-html">
+    <div class="codec-row">
+      <div class="codec-col">
+        <label>Plain HTML</label>
+        <textarea id="html-plain" placeholder='<div class="test">&amp; more</div>'></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="html-plain">Copy</button>
+        </div>
+      </div>
+      <div class="arrow-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </div>
+      <div class="codec-col">
+        <label>HTML Entities</label>
+        <textarea id="html-encoded" placeholder="&amp;lt;div class=&amp;quot;test&amp;quot;&amp;gt;&amp;amp; more&amp;lt;/div&amp;gt;"></textarea>
+        <div class="btn-row">
+          <button class="copy" data-target="html-encoded">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timestamp -->
+  <section class="panel" id="panel-timestamp">
+    <div class="ts-grid">
+      <div class="codec-col">
+        <label>Unix Timestamp (seconds)</label>
+        <input type="text" id="ts-unix" placeholder="1710806400" />
+        <div class="btn-row">
+          <button id="ts-now">Now</button>
+          <button class="copy" data-target="ts-unix">Copy</button>
+        </div>
+      </div>
+      <div class="codec-col">
+        <label>Human Date (UTC)</label>
+        <input type="text" id="ts-human" placeholder="2024-03-19T00:00:00.000Z" />
+        <div class="btn-row">
+          <button class="copy" data-target="ts-human">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1rem">
+      <label style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">Local Time</label>
+      <div class="ts-output" id="ts-local">—</div>
+    </div>
+    <div style="margin-top:0.75rem">
+      <label style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">Relative</label>
+      <div class="ts-output" id="ts-relative">—</div>
+    </div>
+  </section>
+</main>
+
+<footer>DevCodec — built with zero dependencies</footer>
+
+<script type="module">
+  // --- Tab switching ---
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    });
+  });
+
+  // --- Copy buttons ---
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      const text = el.value || el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1200);
+      });
+    });
+  });
+
+  // --- Helper: debounced input ---
+  function onInput(id, fn) {
+    const el = document.getElementById(id);
+    let timer;
+    el.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(el.value), 80);
+    });
+  }
+
+  // Suppress re-trigger flag
+  let suppress = {};
+  function safeSet(id, val) {
+    suppress[id] = true;
+    document.getElementById(id).value = val;
+    setTimeout(() => { suppress[id] = false; }, 100);
+  }
+
+  function guardedInput(id, fn) {
+    onInput(id, v => { if (!suppress[id]) fn(v); });
+  }
+
+  // --- Base64 ---
+  guardedInput('b64-plain', v => {
+    document.getElementById('b64-encoded-err').textContent = '';
+    try {
+      safeSet('b64-encoded', btoa(unescape(encodeURIComponent(v))));
+    } catch (e) {
+      document.getElementById('b64-encoded-err').textContent = e.message;
+    }
+  });
+
+  guardedInput('b64-encoded', v => {
+    document.getElementById('b64-plain-err').textContent = '';
+    try {
+      safeSet('b64-plain', decodeURIComponent(escape(atob(v.trim()))));
+    } catch (e) {
+      document.getElementById('b64-plain-err').textContent = e.message;
+    }
+  });
+
+  // --- URL encode ---
+  guardedInput('url-plain', v => {
+    safeSet('url-encoded', encodeURIComponent(v));
+  });
+
+  guardedInput('url-encoded', v => {
+    try { safeSet('url-plain', decodeURIComponent(v)); } catch {}
+  });
+
+  // --- JWT ---
+  function b64urlDecode(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return decodeURIComponent(escape(atob(str)));
+  }
+
+  onInput('jwt-input', v => {
+    const err = document.getElementById('jwt-err');
+    const header = document.getElementById('jwt-header');
+    const payload = document.getElementById('jwt-payload');
+    const sig = document.getElementById('jwt-signature');
+    const expDiv = document.getElementById('jwt-exp');
+
+    err.textContent = '';
+    expDiv.innerHTML = '';
+
+    const parts = v.trim().split('.');
+    if (parts.length !== 3) {
+      err.textContent = parts.length > 0 && v.trim() ? 'JWT must have 3 parts (header.payload.signature)' : '';
+      header.textContent = '—';
+      payload.textContent = '—';
+      sig.textContent = '—';
+      return;
+    }
+
+    try {
+      const h = JSON.parse(b64urlDecode(parts[0]));
+      header.textContent = JSON.stringify(h, null, 2);
+    } catch { header.textContent = 'Invalid header'; }
+
+    try {
+      const p = JSON.parse(b64urlDecode(parts[1]));
+      payload.textContent = JSON.stringify(p, null, 2);
+
+      if (p.exp) {
+        const expDate = new Date(p.exp * 1000);
+        const now = new Date();
+        const isExpired = expDate < now;
+        expDiv.innerHTML = `<div class="exp-warn ${isExpired ? 'expired' : 'valid'}">${isExpired ? 'EXPIRED' : 'VALID'}: expires ${expDate.toISOString()} (${isExpired ? 'expired' : 'expires'} ${relativeTime(expDate)})</div>`;
+      }
+    } catch { payload.textContent = 'Invalid payload'; }
+
+    sig.textContent = parts[2];
+  });
+
+  // --- Hex ---
+  guardedInput('hex-plain', v => {
+    document.getElementById('hex-encoded-err').textContent = '';
+    const hex = Array.from(new TextEncoder().encode(v)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    safeSet('hex-encoded', hex);
+  });
+
+  guardedInput('hex-encoded', v => {
+    const errEl = document.getElementById('hex-plain-err');
+    errEl.textContent = '';
+    try {
+      const clean = v.replace(/[^0-9a-fA-F]/g, '');
+      if (clean.length % 2 !== 0) { errEl.textContent = 'Odd number of hex characters'; return; }
+      const bytes = new Uint8Array(clean.match(/.{2}/g).map(h => parseInt(h, 16)));
+      safeSet('hex-plain', new TextDecoder().decode(bytes));
+    } catch (e) { errEl.textContent = e.message; }
+  });
+
+  // --- HTML Entities ---
+  const htmlEscMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const htmlUnescMap = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" , '&#x27;': "'" , '&apos;': "'" };
+
+  guardedInput('html-plain', v => {
+    safeSet('html-encoded', v.replace(/[&<>"']/g, c => htmlEscMap[c]));
+  });
+
+  guardedInput('html-encoded', v => {
+    safeSet('html-plain', v.replace(/&(?:amp|lt|gt|quot|#39|#x27|apos);/g, m => htmlUnescMap[m]));
+  });
+
+  // --- Timestamp ---
+  function relativeTime(date) {
+    const diff = date - new Date();
+    const abs = Math.abs(diff);
+    const s = Math.floor(abs / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+    const d = Math.floor(h / 24);
+    let str;
+    if (d > 0) str = d + 'd ' + (h % 24) + 'h';
+    else if (h > 0) str = h + 'h ' + (m % 60) + 'm';
+    else if (m > 0) str = m + 'm ' + (s % 60) + 's';
+    else str = s + 's';
+    return diff < 0 ? str + ' ago' : 'in ' + str;
+  }
+
+  function updateTimestamp(fromUnix) {
+    const unixEl = document.getElementById('ts-unix');
+    const humanEl = document.getElementById('ts-human');
+    const localEl = document.getElementById('ts-local');
+    const relEl = document.getElementById('ts-relative');
+
+    let ts;
+    if (fromUnix) {
+      const v = unixEl.value.trim();
+      if (!v) { humanEl.value = ''; localEl.textContent = '—'; relEl.textContent = '—'; return; }
+      ts = Number(v);
+      if (isNaN(ts)) { localEl.textContent = 'Invalid'; relEl.textContent = '—'; return; }
+      // Auto-detect ms vs s
+      if (ts > 1e12) ts = ts / 1000;
+      const d = new Date(ts * 1000);
+      humanEl.value = d.toISOString();
+      localEl.textContent = d.toLocaleString();
+      relEl.textContent = relativeTime(d);
+    } else {
+      const v = humanEl.value.trim();
+      if (!v) { unixEl.value = ''; localEl.textContent = '—'; relEl.textContent = '—'; return; }
+      const d = new Date(v);
+      if (isNaN(d.getTime())) { localEl.textContent = 'Invalid date'; relEl.textContent = '—'; return; }
+      unixEl.value = Math.floor(d.getTime() / 1000);
+      localEl.textContent = d.toLocaleString();
+      relEl.textContent = relativeTime(d);
+    }
+  }
+
+  onInput('ts-unix', () => updateTimestamp(true));
+  onInput('ts-human', () => updateTimestamp(false));
+
+  document.getElementById('ts-now').addEventListener('click', () => {
+    document.getElementById('ts-unix').value = Math.floor(Date.now() / 1000);
+    updateTimestamp(true);
+  });
+</script>
+</body>
+</html>
