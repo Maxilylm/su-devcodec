@@ -2,7 +2,7 @@
 
 > Six everyday encode/decode tools — Base64, URL, JWT, hex, HTML entities, timestamps — on one page.
 
-**[Live demo](https://su-devcodec.vercel.app)**
+**[Live demo](https://devcodec-mlx.vercel.app)**
 
 Decoding a JWT or Base64 string usually means reaching for whichever random site ranks first that day and pasting a token into it. DevCodec puts the six conversions developers reach for most into a single tabbed page that runs entirely client-side, so nothing you paste is transmitted anywhere. Each tool is a bidirectional pair of fields: edit either side and the other updates as you type, with invalid input handled rather than throwing.
 
@@ -30,4 +30,4 @@ npm run dev
 
 ---
 
-Part of a series of 91 small web apps. [Browse them all](https://su-slopmachine.vercel.app).
+Part of a series of 91 small web apps. [Browse them all](https://lorenzoylosada.vercel.app).
